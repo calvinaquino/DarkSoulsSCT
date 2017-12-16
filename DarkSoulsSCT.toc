@@ -1,0 +1,17 @@
+## Interface: 70300
+## Version: 0.1
+## Title: DarkSoulsSCT
+## Author: Erakk
+## SavedVariables: DarkSoulsSCTDB
+## Notes: Nameplate-based combat text with a Dark Souls style
+## OptionalDeps: Ace3, LibEasing
+
+embeds.xml
+
+Header.lua
+Menu.lua
+UnitTokenStore.lua
+FontStringCache.lua
+FontStringManager.lua
+NameplatesStore.lua
+Core.lua
