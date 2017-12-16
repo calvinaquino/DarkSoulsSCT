@@ -22,14 +22,22 @@ end
 -- remove
 function UnitTokenStore:removeForGuid(guid)
     local unit = self.units[guid];
-    self.units[guid] = nil;
-    self.guids[unit] = nil;
+    if (guid) then
+        self.units[guid] = nil;
+    end
+    if (unit) then
+        self.guids[unit] = nil;
+    end
 end
 
 function UnitTokenStore:removeForUnit(unit)
     local guid = self.guids[unit];
-    self.units[guid] = nil;
-    self.guids[unit] = nil;
+    if (guid) then
+        self.units[guid] = nil;
+    end
+    if (unit) then
+        self.guids[unit] = nil;
+    end
 end
 
 function UnitTokenStore:clear()
