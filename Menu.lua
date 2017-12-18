@@ -50,12 +50,30 @@ local menu = {
             inline = true,
             disabled = function() return not DarkSoulsSCT.db.global.enabled; end;
             args = {
-                useOffTarget = {
+                percentMode = {
                     type = 'toggle',
                     name = "Percentage mode",
                     desc = "Displays damage as a percentage from target's health",
                     get = function() return DarkSoulsSCT.db.global.usesPercentage; end,
                     set = function(_, newValue) DarkSoulsSCT.db.global.usesPercentage = newValue; end,
+                    order = 1,
+                    width = "full",
+                },
+                playerDamageTaken = {
+                    type = 'toggle',
+                    name = "Player damage taken",
+                    desc = "Displays damage taken by the player under his nameplate. Uses same style as damage done text.",
+                    get = function() return DarkSoulsSCT.db.global.playerDamageTaken; end,
+                    set = function(_, newValue) DarkSoulsSCT.db.global.playerDamageTaken = newValue; end,
+                    order = 1,
+                    width = "full",
+                },
+                petDamageDone = {
+                    type = 'toggle',
+                    name = "Pet damage",
+                    desc = "Enables SCT to account for pet damage.",
+                    get = function() return DarkSoulsSCT.db.global.petDamageDone; end,
+                    set = function(_, newValue) DarkSoulsSCT.db.global.petDamageDone = newValue; end,
                     order = 1,
                     width = "full",
                 },

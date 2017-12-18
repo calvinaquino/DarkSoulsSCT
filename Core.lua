@@ -81,7 +81,11 @@ function DarkSoulsSCT:NAME_PLATE_UNIT_REMOVED(event, unit)
 end
 
 function DarkSoulsSCT:COMBAT_LOG_EVENT_UNFILTERED(event, time, cle, hideCaster, sourceGUID, sourceName, sourceFlags, sourceRaidFlags, destGUID, destName, destFlags, destRaidFlags, ...)
-    if (playerGUID == sourceGUID or playerGUID == destGUID) then
+    petGUID = UnitGUID("pet");
+    local petDamageDoneValid = petGUID == sourceGUID and self.db.global.petDamageDone;
+    local playerDamageTakenValid = playerGUID == destGUID and self.db.global.playerDamageTaken;
+    local playerDamageDoneValid = playerGUID == sourceGUID;
+    if (playerDamageDoneValid or playerDamageTakenValid or petDamageDoneValid) then
         if (string.find(cle, "_DAMAGE")) then
             local spellId, spellName, spellSchool, damage, overkill, school, resisted, blocked, absorbed, critical;
             if (string.find(cle, "SWING")) then
