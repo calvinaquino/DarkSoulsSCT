@@ -1,5 +1,5 @@
 ## Interface: 70300
-## Version: 0.1
+## Version: 0.2
 ## Title: DarkSoulsSCT
 ## Author: Erakk
 ## SavedVariables: DarkSoulsSCTDB
