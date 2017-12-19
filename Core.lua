@@ -102,6 +102,61 @@ end
 -- TEXT --
 
 
+local function separatorFormat(amount)
+    local text = amount
+    while true do  
+        text, k = string.gsub(text, "^(-?%d+)(%d%d%d)", '%1,%2')
+        if (k==0) then
+        break
+        end
+    end
+    return text
+end
+
+local function format(amount)
+    local text = nil;
+    local isEnabled = DarkSoulsSCT.db.global.format.enabled;
+    local needsSeparator = DarkSoulsSCT.db.global.format.separatorEnabled;
+    local needsThousandFormat = DarkSoulsSCT.db.global.format.thousandEnabled;
+
+    if (isEnabled) then
+        if (needsSeparator and needsThousandFormat) then
+            local thousand = amount > 1000;
+            if (thousand) then
+                amount = amount / 1000;
+                text = string.format("%.0f", amount);
+                while true do  
+                    text, k = string.gsub(text, "^(-?%d+)(%d%d%d)", '%1,%2')
+                    if (k==0) then
+                    break
+                    end
+                end
+                text = text.."k";
+            else
+                text = string.format("%.0f", amount);
+            end
+        elseif (needsSeparator) then
+            text = string.format("%.0f", amount);
+            while true do  
+                text, k = string.gsub(text, "^(-?%d+)(%d%d%d)", '%1,%2')
+                if (k==0) then
+                break
+                end
+            end
+        elseif (needsThousandFormat) then
+            amount = amount / 1000;
+            text = string.format("%.0f", amount);
+            text = text.."k";
+        else
+            text = string.format("%.0f", amount);
+        end
+    else
+        text = string.format("%.0f", amount);
+    end
+
+    return text;
+end
+
 function DarkSoulsSCT:DamageEvent(sourceGUID, destGUID, amount, isCrit)
     amount = amount + lastAmount;
     lastAmount = amount;
@@ -115,15 +170,7 @@ function DarkSoulsSCT:DamageEvent(sourceGUID, destGUID, amount, isCrit)
         local percent = amount / maxHealth * 100;
         text = string.format("%.1f%%", percent);
     else
-        local thousand = amount > 1000;
-        if (thousand) then
-            amount = amount / 1000;
-        end
-
-        text = string.format("%.0f", amount);
-        if (thousand) then
-            text = text.."k";
-        end
+        text = format(amount);
     end
     text = colored(text);
     self:DisplayDamage(destGUID, text, isCrit);
@@ -158,11 +205,11 @@ local function OnUpdate()
                 --local isTarget = UnitIsUnit(fontString.unit, "target");
                 local unit = UnitTokenStore:unitForGuid(guid);
                 local nameplate = NameplatesStore:getForUnit(unit);
-                
-                fontString:SetPoint("CENTER", fontString.anchorFrame, "CENTER", DarkSoulsSCT.db.global.xOffset, DarkSoulsSCT.db.global.yOffset);
+                local anchor = DarkSoulsSCT.db.global.anchor;
+                fontString:SetPoint(anchor, fontString.anchorFrame, anchor, DarkSoulsSCT.db.global.xOffset, DarkSoulsSCT.db.global.yOffset);
                 if (unit and nameplate) then
                     local xOffset, yOffset = fontString:GetCenter();
-                    fontString:SetPoint("CENTER", fontString.anchorFrame, "CENTER", DarkSoulsSCT.db.global.xOffset + xOffset, DarkSoulsSCT.db.global.yOffset + yOffset);
+                    fontString:SetPoint(anchor, fontString.anchorFrame, anchor, DarkSoulsSCT.db.global.xOffset + xOffset, DarkSoulsSCT.db.global.yOffset + yOffset);
                 end
             end
         end

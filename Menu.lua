@@ -15,6 +15,18 @@ end
 -- MENU
 
 
+local anchorValues = {
+    ["CENTER"] = "Center",
+    ["TOP"] = "Top",
+    ["TOPRIGHT"] = "Top right",
+    ["RIGHT"] = "Right",
+    ["BOTTOMRIGHT"] = "Bottom right",
+    ["BOTTOM"] = "Bottom",
+    ["BOTTOMLEFT"] = "Bottom left",
+    ["LEFT"] = "Left",
+    ["TOPLEFT"] = "Top left",
+};
+
 local menu = {
     name = "DarkSoulsSCT",
     handler = DarkSoulsSCT,
@@ -86,6 +98,15 @@ local menu = {
             inline = true,
             disabled = function() return not DarkSoulsSCT.db.global.enabled; end;
             args = {
+                defaultColor = {
+                    type = 'color',
+                    name = "Text color",
+                    desc = "",
+                    hasAlpha = false,
+                    set = function(_, r, g, b) DarkSoulsSCT.db.global.color = rgbToHex(r, g, b); end,
+                    get = function() return hexToRGB(DarkSoulsSCT.db.global.color); end,
+                    order = 2,
+                },
                 textDuration = {
                     type = 'range',
                     name = "Text duration",
@@ -96,7 +117,7 @@ local menu = {
                     step = .01,
                     get = function() return DarkSoulsSCT.db.global.animationDuration; end,
                     set = function(_, newValue) DarkSoulsSCT.db.global.animationDuration = newValue; end,
-                    order = 1,
+                    order = 2,
                     width = "full",
                 },
                 textSize = {
@@ -109,7 +130,7 @@ local menu = {
                     step = 1,
                     get = function() return DarkSoulsSCT.db.global.textSize; end,
                     set = function(_, newValue) DarkSoulsSCT.db.global.textSize = newValue; end,
-                    order = 2,
+                    order = 3,
                     width = "full",
                 },
                 xOffset = {
@@ -122,7 +143,7 @@ local menu = {
                     step = 1,
                     get = function() return DarkSoulsSCT.db.global.xOffset; end,
                     set = function(_, newValue) DarkSoulsSCT.db.global.xOffset = newValue; end,
-                    order = 3,
+                    order = 4,
                     width = "full",
                 },
                 yOffset = {
@@ -142,19 +163,57 @@ local menu = {
                     type = "select",
                     dialogControl = "LSM30_Font",
                     name = "Font",
-                    order = 1,
+                    order = 6,
                     values = AceGUIWidgetLSMlists.font,
                     get = function() return DarkSoulsSCT.db.global.font; end,
                     set = function(_, newValue) DarkSoulsSCT.db.global.font = newValue; end,
                 },
-                defaultColor = {
-                    type = 'color',
-                    name = "Text color",
-                    desc = "",
-                    hasAlpha = false,
-                    set = function(_, r, g, b) DarkSoulsSCT.db.global.color = rgbToHex(r, g, b); end,
-                    get = function() return hexToRGB(DarkSoulsSCT.db.global.color); end,
-                    order = 3,
+                anchor = {
+                    type = "select",
+                    name = "Text anchor",
+                    order = 7,
+                    values = anchorValues,
+                    get = function() return DarkSoulsSCT.db.global.anchor; end,
+                    set = function(_, newValue) DarkSoulsSCT.db.global.anchor = newValue; end,
+                },
+            },
+        },
+        formatting = {
+            type = 'group',
+            name = "Formatting",
+            order = 30,
+            inline = true,
+            disabled = function() return not DarkSoulsSCT.db.global.enabled; end;
+            args = {
+                formatEnabled = {
+                    type = 'toggle',
+                    name = "Enable formatting",
+                    desc = "Enables formatting of the damage text",
+                    
+                    get = function() return DarkSoulsSCT.db.global.format.enabled; end,
+                    set = function(_, newValue) DarkSoulsSCT.db.global.format.enabled = newValue; end,
+                    order = 1,
+                    width = "full",
+                },
+                separatorEnabled = {
+                    type = 'toggle',
+                    name = "Enable separator",
+                    desc = "Formats the damage numbers where a value of '1255385' becomes '1,255,385' instead",
+                    disabled = function() return not DarkSoulsSCT.db.global.format.enabled; end;
+                    get = function() return DarkSoulsSCT.db.global.format.separatorEnabled; end,
+                    set = function(_, newValue) DarkSoulsSCT.db.global.format.separatorEnabled = newValue; end,
+                    order = 2,
+                    width = "full",
+                },
+                thousandEnabled = {
+                    type = 'toggle',
+                    name = "Enable thousand formatter",
+                    desc = "Formats the damage numbers where a value of '1255385' becomes '1,255k' instead",
+                    disabled = function() return not DarkSoulsSCT.db.global.format.enabled; end;
+                    get = function() return DarkSoulsSCT.db.global.format.thousandEnabled; end,
+                    set = function(_, newValue) DarkSoulsSCT.db.global.format.thousandEnabled = newValue; end,
+                    order = 2,
+                    width = "full",
                 },
             },
         },

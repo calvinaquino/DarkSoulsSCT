@@ -27,5 +27,11 @@ Defaults = {
         yOffset = -30,
         font = "Friz Quadrata TT",
         color = "ffff00",
+        anchor = "CENTER",
+        format = {
+            enabled = true,
+            separatorEnabled = true,
+            thousandEnabled = true,
+        },
     },
 };

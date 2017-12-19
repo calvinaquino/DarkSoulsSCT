@@ -2,7 +2,7 @@
 ## Version: 0.2
 ## Title: DarkSoulsSCT
 ## Author: Erakk
-## SavedVariables: DarkSoulsSCTDB
+## SavedVariablesPerCharacter: DarkSoulsSCTDB
 ## Notes: Nameplate-based combat text with a Dark Souls style
 ## OptionalDeps: Ace3, LibEasing
 
