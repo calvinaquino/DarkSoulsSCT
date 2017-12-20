@@ -4,7 +4,7 @@
 
 
 --used to be able to sum damage amounts if you damage the same unit in less time than a fontstring stays on screen.
-local lastAmount = 0;
+local lastAmount = {};
 
 
 -- HELPERS --
@@ -102,17 +102,6 @@ end
 -- TEXT --
 
 
-local function separatorFormat(amount)
-    local text = amount
-    while true do  
-        text, k = string.gsub(text, "^(-?%d+)(%d%d%d)", '%1,%2')
-        if (k==0) then
-        break
-        end
-    end
-    return text
-end
-
 local function format(amount)
     local text = nil;
     local isEnabled = DarkSoulsSCT.db.global.format.enabled;
@@ -158,20 +147,37 @@ local function format(amount)
 end
 
 function DarkSoulsSCT:DamageEvent(sourceGUID, destGUID, amount, isCrit)
-    amount = amount + lastAmount;
-    lastAmount = amount;
+    if (lastAmount[destGUID]) then
+        amount = amount + lastAmount[destGUID];
+    end
+    lastAmount[destGUID] = amount;
     local text = nil;
-    if self.db.global.usesPercentage then
+
+    if (DarkSoulsSCT.db.global.mode == 2) then
+        --local unit = UnitTokenStore:unitForGuid(playerGUID);
+        local baseStam, statStam, bonusStam = UnitStat("player", 3); 
+        local healthPerStam = 25;
+        local baseHealth = ((baseStam - bonusStam) * healthPerStam);
+        local scoreFactor = 1;
+        local score = amount / baseHealth * 100 * scoreFactor;
+        text = string.format("%.0f", score);
+    elseif (DarkSoulsSCT.db.global.mode == 1) then
         local unit = UnitTokenStore:unitForGuid(destGUID);
         if (not unit) then
             return;
         end
         local maxHealth = UnitHealthMax(unit);
         local percent = amount / maxHealth * 100;
-        text = string.format("%.1f%%", percent);
+        local percentIsSmall = percent < 1;
+        if (percentIsSmall) then
+            text = string.format("%.2f%%", percent);
+        else
+            text = string.format("%.1f%%", percent);
+        end
     else
         text = format(amount);
     end
+
     text = colored(text);
     self:DisplayDamage(destGUID, text, isCrit);
 end
@@ -186,7 +192,7 @@ local function OnUpdate()
             local elapsed = GetTime() - fontString.animationStartTime;
             if (elapsed > fontString.animationDuration) then
                 FontStringManager:releaseForGuid(guid);
-                lastAmount = 0;
+                lastAmount[guid] = nil;
             else
                 local alpha = LibEasing.InExpo(elapsed, 1.0, -1.0, fontString.animationDuration);
                 fontString:SetAlpha(alpha);

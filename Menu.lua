@@ -27,6 +27,12 @@ local anchorValues = {
     ["TOPLEFT"] = "Top left",
 };
 
+local modeValues = {
+    [0] = "Default",
+    [1] = "Percent",
+    [2] = "Scaled",
+};
+
 local menu = {
     name = "DarkSoulsSCT",
     handler = DarkSoulsSCT,
@@ -58,25 +64,36 @@ local menu = {
         mode = {
             type = 'group',
             name = "Mode",
+            order = 9,
+            inline = true,
+            disabled = function() return not DarkSoulsSCT.db.global.enabled; end;
+            args = {
+                scaledMode = {
+                    type = 'select',
+                    name = "Scoring mode",
+                    disabled = function() return not DarkSoulsSCT.db.global.enabled; end;
+                    desc = "Changes how the damage value is calculated/shown.\n\nDefault: Value is the default Blizzard's implementation.\n\nPercent: Value is shown as a percent of the target's max heath.\n\nScaled: Value is a score based on your own base health. This is mostly meant as a new damage scoring system for Blizzard's new scaling tech, so the player can have a real feedback on power progression of the character.",
+                    values = modeValues,
+                    get = function() return DarkSoulsSCT.db.global.mode; end,
+                    set = function(_, newValue) DarkSoulsSCT.db.global.mode = newValue; end,
+                    order = 1,
+                    width = "full",
+                },
+            },
+        },
+        modules = {
+            type = 'group',
+            name = "Modules",
             order = 10,
             inline = true,
             disabled = function() return not DarkSoulsSCT.db.global.enabled; end;
             args = {
-                percentMode = {
-                    type = 'toggle',
-                    name = "Percentage mode",
-                    desc = "Displays damage as a percentage from target's health",
-                    get = function() return DarkSoulsSCT.db.global.usesPercentage; end,
-                    set = function(_, newValue) DarkSoulsSCT.db.global.usesPercentage = newValue; end,
-                    order = 1,
-                    width = "full",
-                },
                 playerDamageTaken = {
                     type = 'toggle',
                     name = "Player damage taken",
                     desc = "Displays damage taken by the player under his nameplate. Uses same style as damage done text.",
-                    get = function() return DarkSoulsSCT.db.global.playerDamageTaken; end,
-                    set = function(_, newValue) DarkSoulsSCT.db.global.playerDamageTaken = newValue; end,
+                    get = function() return DarkSoulsSCT.db.global.modules.playerDamageTaken; end,
+                    set = function(_, newValue) DarkSoulsSCT.db.global.modules.playerDamageTaken = newValue; end,
                     order = 1,
                     width = "full",
                 },
@@ -84,9 +101,9 @@ local menu = {
                     type = 'toggle',
                     name = "Pet damage",
                     desc = "Enables SCT to account for pet damage.",
-                    get = function() return DarkSoulsSCT.db.global.petDamageDone; end,
-                    set = function(_, newValue) DarkSoulsSCT.db.global.petDamageDone = newValue; end,
-                    order = 1,
+                    get = function() return DarkSoulsSCT.db.global.modules.petDamageDone; end,
+                    set = function(_, newValue) DarkSoulsSCT.db.global.modules.petDamageDone = newValue; end,
+                    order = 2,
                     width = "full",
                 },
             },
