@@ -5,6 +5,7 @@
 
 --used to be able to sum damage amounts if you damage the same unit in less time than a fontstring stays on screen.
 local lastAmount = {};
+local outOfCombatEvents = {};
 
 
 -- HELPERS --
@@ -30,8 +31,12 @@ local function getFontPath(fontName)
     return fontPath;
 end
 
-local function colored(string)
-    return "|Cff"..DarkSoulsSCT.db.global.color..string.."|r";
+local function colored(string, isHealing)
+    if (isHealing) then
+        return "|Cff00FF00"..string.."|r";
+    else
+        return "|Cff"..DarkSoulsSCT.db.global.color..string.."|r";
+    end
 end
 
 
@@ -74,6 +79,16 @@ end
 function DarkSoulsSCT:NAME_PLATE_UNIT_ADDED(event, unit)
     local guid = UnitGUID(unit);
     UnitTokenStore:store(unit, guid);
+    local event = outOfCombatEvents[guid];
+    if (event) then
+        local amount = event.amount;
+        local isCrit = event.isCrit;
+        if (event.isHealing) then
+            amount = -amount;
+        end
+        outOfCombatEvents[guid] = nil;
+        self:DamageEvent(guid, guid, amount, isCrit);
+    end
 end
 
 function DarkSoulsSCT:NAME_PLATE_UNIT_REMOVED(event, unit)
@@ -94,6 +109,10 @@ function DarkSoulsSCT:COMBAT_LOG_EVENT_UNFILTERED(event, time, cle, hideCaster, 
                 spellID, spellName, spellSchool, damage, overkill, school, resisted, blocked, absorbed, critical, glancing, crushing = ...;
             end
             self:DamageEvent(sourceGUID, destGUID, damage, critical);
+        elseif (string.find(cle, "_HEAL")) then
+            local spellID, spellName, spellSchool, healing, overhealing, absorbed, critical = ...;
+            local damage = -healing;
+            self:DamageEvent(sourceGUID, destGUID, damage, critical);
         end
     end
 end
@@ -113,7 +132,14 @@ local function format(amount)
             local thousand = amount > 1000;
             if (thousand) then
                 amount = amount / 1000;
-                text = string.format("%.0f", amount);
+
+                if (amount < 10.0) then
+                    text = string.format("%.2f", amount);
+                elseif (amount < 100.0) then
+                    text = string.format("%.1f", amount);
+                else
+                    text = string.format("%.0f", amount);
+                end
                 while true do  
                     text, k = string.gsub(text, "^(-?%d+)(%d%d%d)", '%1,%2')
                     if (k==0) then
@@ -151,7 +177,22 @@ function DarkSoulsSCT:DamageEvent(sourceGUID, destGUID, amount, isCrit)
         amount = amount + lastAmount[destGUID];
     end
     lastAmount[destGUID] = amount;
+    local isHealing = amount < 0;
+    if (isHealing) then
+        amount = -amount;
+    end
     local text = nil;
+
+    local unit = UnitTokenStore:unitForGuid(destGUID);
+    if (not unit) then
+        lastAmount[destGUID] = nil;
+        local event = {};
+        event.amount = amount;
+        event.isCrit = isCrit;
+        event.isHealing = isHealing;
+        outOfCombatEvents[destGUID] = event;
+        return;
+    end
 
     if (DarkSoulsSCT.db.global.mode == 2) then
         --local unit = UnitTokenStore:unitForGuid(playerGUID);
@@ -162,13 +203,9 @@ function DarkSoulsSCT:DamageEvent(sourceGUID, destGUID, amount, isCrit)
         local score = amount / baseHealth * 100 * scoreFactor;
         text = string.format("%.0f", score);
     elseif (DarkSoulsSCT.db.global.mode == 1) then
-        local unit = UnitTokenStore:unitForGuid(destGUID);
-        if (not unit) then
-            return;
-        end
         local maxHealth = UnitHealthMax(unit);
         local percent = amount / maxHealth * 100;
-        local percentIsSmall = percent < 1;
+        local percentIsSmall = percent < 3;
         if (percentIsSmall) then
             text = string.format("%.2f%%", percent);
         else
@@ -178,7 +215,7 @@ function DarkSoulsSCT:DamageEvent(sourceGUID, destGUID, amount, isCrit)
         text = format(amount);
     end
 
-    text = colored(text);
+    text = colored(text, isHealing);
     self:DisplayDamage(destGUID, text, isCrit);
 end
 
