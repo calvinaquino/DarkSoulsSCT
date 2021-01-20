@@ -60,6 +60,7 @@ function DarkSoulsSCT:OnEnable()
     self:RegisterEvent("NAME_PLATE_UNIT_ADDED");
     self:RegisterEvent("NAME_PLATE_UNIT_REMOVED");
     self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED");
+    self:RegisterEvent("COMBAT_LOG_EVENT");
 
     self.db.global.enabled = true;
 end
@@ -95,10 +96,18 @@ function DarkSoulsSCT:NAME_PLATE_UNIT_REMOVED(event, unit)
     UnitTokenStore:removeForUnit(unit);
 end
 
-function DarkSoulsSCT:COMBAT_LOG_EVENT_UNFILTERED(event, time, cle, hideCaster, sourceGUID, sourceName, sourceFlags, sourceRaidFlags, destGUID, destName, destFlags, destRaidFlags, ...)
-    petGUID = UnitGUID("pet");
+function DarkSoulsSCT:COMBAT_LOG_EVENT(event)
+    DarkSoulsSCT:COMBAT_LOG_EVENT_ORIGINAL(event, CombatLogGetCurrentEventInfo() )
+end
+
+function DarkSoulsSCT:COMBAT_LOG_EVENT_UNFILTERED(event)
+    DarkSoulsSCT:COMBAT_LOG_EVENT_ORIGINAL(event, CombatLogGetCurrentEventInfo() )
+end
+
+function DarkSoulsSCT:COMBAT_LOG_EVENT_ORIGINAL(event, time, cle, hideCaster, sourceGUID, sourceName, sourceFlags, sourceRaidFlags, destGUID, destName, destFlags, destRaidFlags, ...)
+    petGUID = UnitGUID("Pet");
     local petDamageDoneValid = petGUID == sourceGUID and self.db.global.petDamageDone;
-    local playerDamageTakenValid = playerGUID == destGUID and self.db.global.playerDamageTaken;
+    local playerDamageTakenValid = playerGUID == destGUID and self.db.global.module.playerDamageTaken;
     local playerDamageDoneValid = playerGUID == sourceGUID;
     if (playerDamageDoneValid or playerDamageTakenValid or petDamageDoneValid) then
         if (string.find(cle, "_DAMAGE")) then
