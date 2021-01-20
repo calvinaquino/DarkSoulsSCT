@@ -18,10 +18,8 @@ DarkSoulsSCT.frame = CreateFrame("Frame", nil, UIParent);
 Defaults = {
     global = {
         enabled = true,
-        modules = {
-            playerDamageTaken = true,
-            petDamageDone = true,
-        },
+        playerDamageTaken = true,
+        petDamageDone = true,
         mode = 0; --0 default, 1 percent, 2 scaled
         animationDuration = 0.6,
         textSize = 25,
