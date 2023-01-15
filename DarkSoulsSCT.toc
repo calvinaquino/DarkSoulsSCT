@@ -1,5 +1,5 @@
-## Interface: 90200
-## Version: 0.4
+## Interface: 100200
+## Version: 0.5
 ## Title: DarkSoulsSCT
 ## Author: Erakk
 ## SavedVariablesPerCharacter: DarkSoulsSCTDB

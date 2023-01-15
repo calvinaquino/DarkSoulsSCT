@@ -21,18 +21,32 @@ Defaults = {
         playerDamageTaken = true,
         petDamageDone = true,
         mode = 0; --0 default, 1 percent, 2 scaled
-        animationDuration = 0.6,
-        textSize = 25,
-        xOffset = 50,
-        yOffset = -30,
+        --
+        factor = 1.0,
         font = "Friz Quadrata TT",
-        color = "ffff00",
-        anchor = "CENTER",
+        --
+        target = {
+            animationDuration = 1.0,
+            textSize = 25,
+            xOffset = -16,
+            yOffset = -30,
+            color = "ffff00",
+            anchor = "RIGHT",
+        },
+        self = {
+            animationDuration = 1.0,
+            textSize = 25,
+            xOffset = -10,
+            yOffset = 30,
+            color = "ffff00",
+            anchor = "RIGHT",
+        },
+        --
         format = {
             enabled = true,
             separatorEnabled = true,
             thousandEnabled = true,
+            percentEnabled = true,
         },
-
     },
 };

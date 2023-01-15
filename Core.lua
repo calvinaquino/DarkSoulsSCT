@@ -31,11 +31,20 @@ local function getFontPath(fontName)
     return fontPath;
 end
 
-local function colored(string, isHealing)
+local function textRenderingInfoForGuid(guid)
+    local playerGUID = UnitGUID("player");
+    if (guid == playerGUID) then
+        return DarkSoulsSCT.db.global.self;
+    else
+        return DarkSoulsSCT.db.global.target;
+    end
+end
+
+local function colored(string, isHealing, destGUID)
     if (isHealing) then
         return "|Cff00FF00"..string.."|r";
     else
-        return "|Cff"..DarkSoulsSCT.db.global.color..string.."|r";
+        return "|Cff"..textRenderingInfoForGuid(destGUID).color..string.."|r";
     end
 end
 
@@ -55,12 +64,12 @@ function DarkSoulsSCT:OnInitialize()
 end
 
 function DarkSoulsSCT:OnEnable()
-    playerGUID = UnitGUID("player");
+    PlayerGUID = UnitGUID("player");
+    UnitTokenStore:clear();
 
     self:RegisterEvent("NAME_PLATE_UNIT_ADDED");
     self:RegisterEvent("NAME_PLATE_UNIT_REMOVED");
     self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED");
-    self:RegisterEvent("COMBAT_LOG_EVENT");
 
     self.db.global.enabled = true;
 end
@@ -69,6 +78,7 @@ function DarkSoulsSCT:OnDisable()
     self:UnregisterAllEvents();
 
     FontStringsCache:clear();
+    UnitTokenStore:clear();
 
     self.db.global.enabled = false;
 end
@@ -80,11 +90,12 @@ end
 function DarkSoulsSCT:NAME_PLATE_UNIT_ADDED(event, unit)
     local guid = UnitGUID(unit);
     UnitTokenStore:store(unit, guid);
-    local event = outOfCombatEvents[guid];
-    if (event) then
-        local amount = event.amount;
-        local isCrit = event.isCrit;
-        if (event.isHealing) then
+    local oocEvent = outOfCombatEvents[guid];
+
+    if (oocEvent) then
+        local amount = oocEvent.amount;
+        local isCrit = oocEvent.isCrit;
+        if (oocEvent.isHealing) then
             amount = -amount;
         end
         outOfCombatEvents[guid] = nil;
@@ -96,19 +107,25 @@ function DarkSoulsSCT:NAME_PLATE_UNIT_REMOVED(event, unit)
     UnitTokenStore:removeForUnit(unit);
 end
 
-function DarkSoulsSCT:COMBAT_LOG_EVENT(event)
-    DarkSoulsSCT:COMBAT_LOG_EVENT_ORIGINAL(event, CombatLogGetCurrentEventInfo() )
-end
-
 function DarkSoulsSCT:COMBAT_LOG_EVENT_UNFILTERED(event)
     DarkSoulsSCT:COMBAT_LOG_EVENT_ORIGINAL(event, CombatLogGetCurrentEventInfo() )
 end
 
 function DarkSoulsSCT:COMBAT_LOG_EVENT_ORIGINAL(event, time, cle, hideCaster, sourceGUID, sourceName, sourceFlags, sourceRaidFlags, destGUID, destName, destFlags, destRaidFlags, ...)
-    petGUID = UnitGUID("Pet");
+    local petGUID = UnitGUID("pet");
+
+    if (destGUID ~= PlayerGUID and sourceGUID ~= PlayerGUID) then
+        return;
+    end
+
+    if (not string.find(cle, "_DAMAGE") and not string.find(cle, "_HEAL")) then
+        return;
+    end
+
     local petDamageDoneValid = petGUID == sourceGUID and self.db.global.petDamageDone;
-    local playerDamageTakenValid = playerGUID == destGUID and self.db.global.module.playerDamageTaken;
-    local playerDamageDoneValid = playerGUID == sourceGUID;
+    local playerDamageTakenValid = PlayerGUID == destGUID and self.db.global.playerDamageTaken;
+    local playerDamageDoneValid = PlayerGUID == sourceGUID;
+
     if (playerDamageDoneValid or playerDamageTakenValid or petDamageDoneValid) then
         if (string.find(cle, "_DAMAGE")) then
             local spellId, spellName, spellSchool, damage, overkill, school, resisted, blocked, absorbed, critical;
@@ -182,6 +199,7 @@ local function format(amount)
 end
 
 function DarkSoulsSCT:DamageEvent(sourceGUID, destGUID, amount, isCrit)
+    amount = amount * DarkSoulsSCT.db.global.factor;
     if (lastAmount[destGUID]) then
         amount = amount + lastAmount[destGUID];
     end
@@ -203,28 +221,39 @@ function DarkSoulsSCT:DamageEvent(sourceGUID, destGUID, amount, isCrit)
         return;
     end
 
-    if (DarkSoulsSCT.db.global.mode == 2) then
-        --local unit = UnitTokenStore:unitForGuid(playerGUID);
-        local baseStam, statStam, bonusStam = UnitStat("player", 3); 
-        local healthPerStam = 25;
-        local baseHealth = ((baseStam - bonusStam) * healthPerStam);
-        local scoreFactor = 1;
-        local score = amount / baseHealth * 100 * scoreFactor;
-        text = string.format("%.0f", score);
-    elseif (DarkSoulsSCT.db.global.mode == 1) then
-        local maxHealth = UnitHealthMax(unit);
-        local percent = amount / maxHealth * 100;
-        local percentIsSmall = percent < 3;
-        if (percentIsSmall) then
-            text = string.format("%.2f%%", percent);
-        else
-            text = string.format("%.1f%%", percent);
-        end
-    else
+    if (DarkSoulsSCT.db.global.mode == 0) then
+        -- Default Option
         text = format(amount);
+    else
+        local health = 0;
+        if (DarkSoulsSCT.db.global.mode == 1) then
+            -- Target Health Option
+            health = UnitHealth(unit);
+        elseif (DarkSoulsSCT.db.global.mode == 2) then
+            -- Player Base Health Option
+            local baseStam, statStam, bonusStam = UnitStat("player", 3);
+            local healthPerStam = 25;
+            health = ((baseStam - bonusStam) * healthPerStam);
+        end
+        local percent = amount / health * 100;
+        local percentEnabled = DarkSoulsSCT.db.global.format.percentEnabled;
+        local percentIsSmall = percent < 3;
+        if percentEnabled then
+            if (percentIsSmall) then
+                text = string.format("%.2f%%", percent);
+            else
+                text = string.format("%.1f%%", percent);
+            end
+        else
+            if (percentIsSmall) then
+                text = string.format("%.2f", percent);
+            else
+                text = string.format("%.1f", percent);
+            end
+        end
     end
 
-    text = colored(text, isHealing);
+    text = colored(text, isHealing, destGUID);
     self:DisplayDamage(destGUID, text, isCrit);
 end
 
@@ -240,6 +269,7 @@ local function OnUpdate()
                 FontStringManager:releaseForGuid(guid);
                 lastAmount[guid] = nil;
             else
+                local renderingInfo = textRenderingInfoForGuid(guid);
                 local alpha = LibEasing.InExpo(elapsed, 1.0, -1.0, fontString.animationDuration);
                 fontString:SetAlpha(alpha);
 
@@ -250,18 +280,18 @@ local function OnUpdate()
                     else
                         fontString.pow = nil;
                         fontString:SetTextHeight(fontString.startHeight);
-                        fontString:SetFont(getFontPath(DarkSoulsSCT.db.global.font), DarkSoulsSCT.db.global.textSize, "OUTLINE");
+                        fontString:SetFont(getFontPath(DarkSoulsSCT.db.global.font), renderingInfo.textSize, "OUTLINE");
                     end
                 end
 
                 --local isTarget = UnitIsUnit(fontString.unit, "target");
                 local unit = UnitTokenStore:unitForGuid(guid);
                 local nameplate = NameplatesStore:getForUnit(unit);
-                local anchor = DarkSoulsSCT.db.global.anchor;
-                fontString:SetPoint(anchor, fontString.anchorFrame, anchor, DarkSoulsSCT.db.global.xOffset, DarkSoulsSCT.db.global.yOffset);
+                local anchor = renderingInfo.anchor;
+                fontString:SetPoint(anchor, fontString.anchorFrame, anchor, renderingInfo.xOffset, renderingInfo.yOffset);
                 if (unit and nameplate) then
                     local xOffset, yOffset = fontString:GetCenter();
-                    fontString:SetPoint(anchor, fontString.anchorFrame, anchor, DarkSoulsSCT.db.global.xOffset + xOffset, DarkSoulsSCT.db.global.yOffset + yOffset);
+                    fontString:SetPoint(anchor, fontString.anchorFrame, anchor, renderingInfo.xOffset + xOffset, renderingInfo.yOffset + yOffset);
                 end
             end
         end
@@ -275,6 +305,7 @@ end
 function DarkSoulsSCT:DisplayDamage(guid, text, isCrit)
     local fontString;
     local unit = UnitTokenStore:unitForGuid(guid);
+    local renderingInfo = textRenderingInfoForGuid(guid);
     local nameplate;
 
     if (unit) then
@@ -283,7 +314,7 @@ function DarkSoulsSCT:DisplayDamage(guid, text, isCrit)
 
     fontString = FontStringManager:newForGuid(guid);
     fontString:SetParent(DarkSoulsSCT.frame);
-    fontString:SetFont(getFontPath(DarkSoulsSCT.db.global.font), DarkSoulsSCT.db.global.textSize, "OUTLINE");
+    fontString:SetFont(getFontPath(DarkSoulsSCT.db.global.font), renderingInfo.textSize, "OUTLINE");
     fontString:SetAlpha(1);
     fontString:SetDrawLayer("OVERLAY");
     fontString:SetText(text);
@@ -292,7 +323,7 @@ function DarkSoulsSCT:DisplayDamage(guid, text, isCrit)
     fontString.startHeight = fontString:GetStringHeight();
     fontString.pow = isCrit;
 
-    fontString.animationDuration = self.db.global.animationDuration;
+    fontString.animationDuration = renderingInfo.animationDuration;
     fontString.animationStartTime = GetTime();
     fontString.anchorFrame = nameplate;
 
